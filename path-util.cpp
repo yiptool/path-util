@@ -29,7 +29,12 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#ifdef INCLUDE_DIRENT_H
+#include INCLUDE_DIRENT_H
+#else
 #include <yip-imports/dirent.h>
+#endif
 
 #ifndef _WIN32
  #include <unistd.h>
