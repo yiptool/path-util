@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 //
 #include "path-util.h"
+#include <sstream>
 #include <stdexcept>
 #include <cerrno>
 #include <cstdlib>
@@ -28,7 +29,6 @@
 #include <vector>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <yip-imports/cxx-util/fmt.h>
 #include <yip-imports/dirent.h>
 
 #ifndef _WIN32
@@ -118,7 +118,9 @@ std::string pathGetCurrentDirectory()
 	if (!getcwd(buf.data(), buf.size()))
 	{
 		int err = errno;
-		throw std::runtime_error(fmt() << "unable to determine current directory: " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to determine current directory: " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return buf.data();
   #else
@@ -126,14 +128,18 @@ std::string pathGetCurrentDirectory()
 	if (size == 0)
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to determine current directory (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine current directory (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	std::vector<char> buf(size);
 	DWORD len = GetCurrentDirectoryA(size, buf.data());
 	if (len == 0 || len >= size)
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to determine current directory (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine current directory (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	return std::string(buf.data(), len);
   #endif
@@ -157,7 +163,9 @@ std::string pathGetUserHomeDirectory()
 	if (!OpenProcessToken(GetCurrentProcess(), TOKEN_QUERY, &hToken))
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to determine path to the user home directory (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine path to the user home directory (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	try
 	{
@@ -166,7 +174,9 @@ std::string pathGetUserHomeDirectory()
 		if (!GetUserProfileDirectoryA(hToken, buf.data(), &size))
 		{
 			DWORD err = GetLastError();
-			throw std::runtime_error(fmt() << "unable to determine path to the user home directory (code " << err << ").");
+			std::stringstream ss;
+			ss << "unable to determine path to the user home directory (code " << err << ").";
+			throw std::runtime_error(ss.str());
 		}
 		result = buf.data();
 	}
@@ -222,16 +232,18 @@ std::string pathMakeAbsolute(const std::string & path)
 	if (size == 0)
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to determine absolute path for file '" << path 
-			<< "' (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine absolute path for file '" << path << "' (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	std::vector<char> buf(size);
 	DWORD len = GetFullPathNameA(path.c_str(), size, buf.data(), nullptr);
 	if (len == 0 || len >= size)
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to determine absolute path for file '" << path 
-			<< "' (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine absolute path for file '" << path << "' (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	return std::string(buf.data(), len);
   #endif
@@ -338,7 +350,9 @@ std::string pathMakeCanonical(const std::string & path)
 	if (!realpath(path.c_str(), buf.data()))
 	{
 		int err = errno;
-		throw std::runtime_error(fmt() << "unable to canonicalize path '" << path << "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to canonicalize path '" << path << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return buf.data();
   #else
@@ -424,7 +438,11 @@ bool pathCreate(const std::string & path)
 	if (pathIsSeparator(dir[0]))
 		off = 1;
 	else
-		throw std::runtime_error(fmt() << "invalid path '" << dir << "'.");
+	{
+		std::stringstream ss;
+		ss << "invalid path '" << dir << "'.";
+		throw std::runtime_error(ss.str());
+	}
   #else
 	if (pathIsWin32PathWithDriveLetter(dir))
 		off = 3;
@@ -432,11 +450,19 @@ bool pathCreate(const std::string & path)
 	{
 		off = pathIndexOfFirstSeparator(dir, 2);
 		if (off == std::string::npos)
-			throw std::runtime_error(fmt() << "invalid path '" << dir << "'.");
+		{
+			std::stringstream ss;
+			ss << "invalid path '" << dir << "'.";
+			throw std::runtime_error(ss.str());
+		}
 		++off;
 	}
 	else
-		throw std::runtime_error(fmt() << "invalid path '" << dir << "'.");
+	{
+		std::stringstream ss;
+		ss << "invalid path '" << dir << "'.";
+		throw std::runtime_error(ss.str());
+	}
   #endif
 
 	size_t end;
@@ -459,8 +485,9 @@ bool pathCreate(const std::string & path)
 			int err = errno;
 			if (err != EEXIST)
 			{
-				throw std::runtime_error(fmt()
-					<< "unable to create directory '" << subdir << "': " << strerror(err));
+				std::stringstream ss;
+				ss << "unable to create directory '" << subdir << "': " << strerror(err);
+				throw std::runtime_error(ss.str());
 			}
 		}
 	  #else
@@ -471,8 +498,9 @@ bool pathCreate(const std::string & path)
 			DWORD err = GetLastError();
 			if (err != ERROR_ALREADY_EXISTS)
 			{
-				throw std::runtime_error(fmt()
-					<< "unable to create directory '" << subdir << "' (code " << err << ").");
+				std::stringstream ss;
+				ss << "unable to create directory '" << subdir << "' (code " << err << ").";
+				throw std::runtime_error(ss.str());
 			}
 		}
 	  #endif
@@ -499,7 +527,9 @@ bool pathIsFile(const std::string & path)
 		err = errno;
 		if (err == ENOENT)
 			return false;
-		throw std::runtime_error(fmt() << "unable to stat file '" << path << "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to stat file '" << path << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return S_ISREG(st.st_mode);
   #else
@@ -510,8 +540,9 @@ bool pathIsFile(const std::string & path)
 		if (err = ERROR_FILE_NOT_FOUND || err == ERROR_PATH_NOT_FOUND ||
 				err == ERROR_INVALID_DRIVE || err == ERROR_BAD_NETPATH)
 			return false;
-		throw std::runtime_error(fmt()
-			<< "unable to get attributes for file '" << path << "' (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to get attributes for file '" << path << "' (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
 	return (attr & (FILE_ATTRIBUTE_DEVICE | FILE_ATTRIBUTE_DIRECTORY)) == 0;
   #endif
@@ -524,7 +555,9 @@ time_t pathGetModificationTime(const std::string & path)
 	if (err < 0)
 	{
 		err = errno;
-		throw std::runtime_error(fmt() << "unable to stat file '" << path << "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to stat file '" << path << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return st.st_mtime;
 }
@@ -536,8 +569,9 @@ std::string pathGetThisExecutableFile()
 	if (!GetModuleFileNameA(nullptr, buf, sizeof(buf)))
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt()
-			<< "unable to determine file name of yip executable file (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to determine file name of executable file (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
   #elif defined(__APPLE__)
 	uint32_t size = 0;
@@ -545,13 +579,13 @@ std::string pathGetThisExecutableFile()
 	if (_NSGetExecutablePath(&tempChar, &size) >= 0 || size == 0)
 	{
 		throw std::runtime_error(
-			"unable to determine file name of yip executable file (_NSGetExecutablePath has weird behavior).");
+			"unable to determine file name of executable file (_NSGetExecutablePath has weird behavior).");
 	}
 	std::vector<char> buf(size + 1);
 	if (_NSGetExecutablePath(buf.data(), &size) < 0)
 	{
 		throw std::runtime_error
-			("unable to determine file name of yip executable file (_NSGetExecutablePath has failed).");
+			("unable to determine file name of executable file (_NSGetExecutablePath has failed).");
 	}
 	return buf.data();
   #elif defined(__linux__) || defined(__ANDROID__)
@@ -559,7 +593,9 @@ std::string pathGetThisExecutableFile()
 	if (readlink("/proc/self/exe", buf.data(), PATH_MAX) < 0)
 	{
 		int err = errno;
-		throw std::runtime_error(fmt() << "unable to read link '/proc/self/exe': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to read link '/proc/self/exe': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return buf.data();
   #elif defined(__FreeBSD__)
@@ -573,17 +609,18 @@ std::string pathGetThisExecutableFile()
 	if (sysctl(mib, 4, buf, PATH_MAX, nullptr, 0) < 0)
 	{
 		int err = errno;
-		throw std::runtime_error(fmt()
-			<< "unable to determine file name of yip executable file: " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to determine file name of executable file: " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 	return buf.data();
   #elif defined(sun) || defined(__sun) || defined(SUNOS)
 	const char * path = getexecname();
 	if (!path || !*path)
-		throw std::runtime_error("unable to determine file name of yip executable file.");
+		throw std::runtime_error("unable to determine file name of executable file.");
 	return path;
   #else
-	throw std::runtime_error("unable to determine file name of yip executable file (not implemented).");
+	throw std::runtime_error("unable to determine file name of executable file (not implemented).");
   #endif
 }
 
@@ -593,8 +630,9 @@ std::string pathCreateSymLink(const std::string & from, const std::string & to)
 	if (!CreateSymbolicLinkA(to.c_str(), from.c_str(), 0))
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt()
-			<< "unable to create symlink from '" << from << "' to '" << to << " (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to create symlink from '" << from << "' to '" << to << " (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
   #else
 	int r = symlink(from.c_str(), to.c_str());
@@ -607,8 +645,9 @@ std::string pathCreateSymLink(const std::string & from, const std::string & to)
 			if (readlink(to.c_str(), buf.data(), PATH_MAX) >= 0 && from == buf.data())
 				return to;
 		}
-		throw std::runtime_error(fmt() << "unable to create symlink from '" << from << "' to '" << to
-			<< "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to create symlink from '" << from << "' to '" << to << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
   #endif
 
@@ -624,8 +663,9 @@ DirEntryList pathEnumDirectoryContents(const std::string & path)
 	if (!dir)
 	{
 		int err = errno;
-		throw std::runtime_error(fmt() << "unable to enumerate contents of directory '"
-			<< path << "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to enumerate contents of directory '" << path << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
 
 	try
@@ -671,13 +711,17 @@ void pathDeleteFile(const std::string & path)
 	if (unlink(path.c_str()) < 0)
 	{
 		int err = errno;
-		throw std::runtime_error(fmt() << "unable to delete file '" << path << "': " << strerror(err));
+		std::stringstream ss;
+		ss << "unable to delete file '" << path << "': " << strerror(err);
+		throw std::runtime_error(ss.str());
 	}
   #else
 	if (!DeleteFileA(path.c_str()))
 	{
 		DWORD err = GetLastError();
-		throw std::runtime_error(fmt() << "unable to delete file '" << path << "' (code " << err << ").");
+		std::stringstream ss;
+		ss << "unable to delete file '" << path << "' (code " << err << ").";
+		throw std::runtime_error(ss.str());
 	}
   #endif
 }
