@@ -676,7 +676,7 @@ DirEntryList pathEnumDirectoryContents(const std::string & path)
 	try
 	{
 		struct dirent * ent;
-		while ((ent = readdir(dir)) != NULL)
+		while ((ent = readdir(dir)) != nullptr)
 		{
 			DirEntry entry;
 
