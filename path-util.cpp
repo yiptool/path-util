@@ -578,6 +578,7 @@ std::string pathGetThisExecutableFile()
 		ss << "unable to determine file name of executable file (code " << err << ").";
 		throw std::runtime_error(ss.str());
 	}
+	return buf;
   #elif defined(__APPLE__)
 	uint32_t size = 0;
 	char tempChar = 0;
@@ -688,11 +689,13 @@ DirEntryList pathEnumDirectoryContents(const std::string & path)
 			{
 			case DT_REG: entry.type = DirEntry_RegularFile; break;
 			case DT_DIR: entry.type = DirEntry_Directory; break;
+		  #ifndef _WIN32
 			case DT_FIFO: entry.type = DirEntry_FIFO; break;
 			case DT_SOCK: entry.type = DirEntry_Socket; break;
 			case DT_CHR: entry.type = DirEntry_CharDevice; break;
 			case DT_BLK: entry.type = DirEntry_BlockDevice; break;
 			case DT_LNK: entry.type = DirEntry_Link; break;
+		  #endif
 			default: entry.type = DirEntry_Unknown; break;
 			}
 
